@@ -25,7 +25,7 @@ querystring.escape()被querystring.stringify()使用，但是一般不推荐直�
 * `eq` \<String> 用于分界查询字符串中key与value的字符串，默认为`'='`.
 * `options` \<Object>
     * `decodeURIComponent` \<Function>  设置一个函数解码百分比编码的查询字符串，默认使用`querystring.unescape()`.
-    * `maxKeys` \<number>
+    * `maxKeys` \<number> 指定编码时key数量最多为多少。默认是1000，设置为0则表示不限数量
 
   
 
