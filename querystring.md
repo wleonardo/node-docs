@@ -41,6 +41,8 @@ querystring.escape()被querystring.stringify()使用，但是一般不推荐直�
 // 假定 gbkDecodeURIComponent 函数已经存在..
 querystring.parse('w=%D6%D0%CE%C4&foo=bar', null, null, { decodeURIComponent: gbkDecodeURIComponent })
 ```
+##querystring.stringify(obj[, sep[, eq[, options]]])
+ 加入：v0.1.25
   
 
 
