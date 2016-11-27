@@ -34,5 +34,27 @@ exports.circumference = (r) => 2 * PI * r;
 
 本地变量在模块中是私有的，因为在Node.js中模块会被一个函数所包裹（详见[module wrapper](#module wrapper)）,上面的例子中，变量`PI`对于`circle.js`是私有的
 
+如果你想要模块输出一个函数（类似构造函数）或者想要一次输出一个完整的对象而不是每次创建一个属性，就把它绑定在`module.exports`上，而不是`exports`。
+
+下面， `bar.js`使用了`square`模块，而`square`模块则输出的是一个构造函数：
+
+```
+const square = require('./square.js');
+var mySquare = square(2);
+console.log(`The area of my square is ${mySquare.area()}`);
+```
+
+`square`模块定义在`square.js`中：
+
+```
+// 绑定在exports上不会修改当前模块，必须要使用module.exports 
+module.exports = (width) => {
+  return {
+    area: () => width * width
+  };
+}
+```
+
+模块系统在`require（“module”）`模块中实现。
 
 
