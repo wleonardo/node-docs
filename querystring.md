@@ -23,7 +23,7 @@ querystring.escape()被querystring.stringify()使用，但是一般不推荐直�
 * `str` \<String> 待解析的url查询字符串
 * `sep` \<String> 用于分界查询字符串中每对key与value的字符串，默认为`'&'`.
 * `eq` \<String> 用于分界查询字符串中key与value的字符串，默认为`'='`.
-* `options` \<Object>
+* `options` \<Object> 
     * `decodeURIComponent` \<Function>  设置一个函数解码百分比编码的查询字符串，默认使用`querystring.unescape()`.
     * `maxKeys` \<number> 指定编码时key数量最多为多少。默认是1000，设置为0则表示不限数量
 `querystring.parse()`函数可以解析一个url的查询字符串（`str`）为一个键值对（key：value）的集合
@@ -43,6 +43,36 @@ querystring.parse('w=%D6%D0%CE%C4&foo=bar', null, null, { decodeURIComponent: gb
 ```
 ##querystring.stringify(obj[, sep[, eq[, options]]])
  加入：v0.1.25
+ * `obj` \<Object> 要被序列化为查询字符串的对象.
+ * `sep` \<String> 用于分界查询字符串中每对key与value的字符串，默认为`'&'`.
+* `eq` \<String> 用于分界查询字符串中key与value的字符串，默认为`'='`.
+* `options`
+    * `encodeURIComponent` \<Function> 在转换查询字符传时把url中不安全的的字符串转换为百分比编码的函数.默认使用`querystring.escape()`.
+`querystring.stringify()`函数是通过遍历对象的“own properties“来生成url查询字符串
+例子：
+```
+querystring.stringify({ foo: 'bar', baz: ['qux', 'quux'], corge: '' })
+// returns 'foo=bar&baz=qux&baz=quux&corge='
+
+querystring.stringify({foo: 'bar', baz: 'qux'}, ';', ':')
+// returns 'foo:bar;baz:qux'
+```
+一般，查询字符串中需要百分比编码的字符会被编码为UTF-8格式。如果需要代替的编码，那么将需要指定另一个encodeURIComponent选项，如以下示例所示
+```
+// 假定 gbkEncodeURIComponent 函数已经存在,
+
+querystring.stringify({ w: '中文', foo: 'bar' }, null, null,
+  { encodeURIComponent: gbkEncodeURIComponent })
+```
+##querystring.unescape(str)
+加入：v.0.1.25
+* `str` \<String>
+`querystring.unescape()`方法可以对提供的字符串进行url的百分比编码.
+The querystring.unescape() method is used by querystring.parse() and is generally not expected to be used directly. It is exported primarily to allow application code to provide a replacement decoding implementation if necessary by assigning querystring.unescape to an alternative function
+`querystring.unescape()`方法被`querystring.parse()`函数所使用，一般来说也不推荐直接使用该函数。主要在应用程序代码在必要的时候被用来分配给替代函数来实现替换解码？？
+默认情况下，`querystring.unescape()`函数会尝试使用基于`decodeURIComponent()`方法来进行解码，这样即使解码失败了，也会输出一个更加安全等效的结果，而不会输出一个错误的url
+
+
   
 
 
