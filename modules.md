@@ -57,4 +57,16 @@ module.exports = (width) => {
 
 模块系统在`require（“module”）`模块中实现。
 
+## 访问main模块
+
+当一个文件是直接被Node.js运行的，`require.main`被设置为它的`module`,这就是说你可以你可以通过以下的方式来判断一个文件是否是直接被Node.js运行的。
+
+```
+require.main === module
+```
+
+对于文件foo.js，如果是通过执行`node foo.js`来运行的，上面的测试就会返回true，而如果是通过`require('./foo')`的方式来运行的，则会返回false。
+
+因为模块都有一个`filename`属性（一般等同于`__filename`）, 当前项目会通过核对`require.main.filename`来获得入口点。
+
 
