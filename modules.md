@@ -69,4 +69,6 @@ require.main === module
 
 因为模块都有一个`filename`属性（一般等同于`__filename`）, 当前项目会通过核对`require.main.filename`来获得入口点。
 
+## 另外：包管理器小提示
+
 
