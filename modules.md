@@ -78,6 +78,68 @@ Node.js的`require()`函数的语义被设计为足够通用以来支持很多�
 
 包可能依赖于其他的包。为了安装一个`foo`包，我们可能需要安装一个特定版本`bar`包。在某些情况下，`bar`可能还有他自己的依赖。这些依赖性甚至可能碰撞或形成循环。
 
+因此Node.js寻找它加载的任何模块的真实路径（`relapath`），然后寻找模块的中`node_modules` 文件夹中的模块依赖关系，这种形式可以很简单的解决以下的文件结构：
+* `/usr/lib/node/foo/1.2.3/` - 版本1.2.3的`foo`的内容。
+* `/usr/lib/node/bar/4.3.2/` - `foo`依赖的`bar`包的内容
+* `/usr/lib/node/foo/1.2.3/node_modules/bar` - 链接到的`/usr/lib/node/bar/4.3.2/`符号
+* `/usr/lib/node/bar/4.3.2/node_modules/*` - `bar`包的所有依赖的链接符号
+
+因此，即使遇到依赖形成循环，或者依赖有冲突，每个模块都可以获取到可以用的版本的依赖。
+
+当`foo`包代码中有`require('bar')`，它会得到链接到`/usr/lib/node/foo/1.2.3/node_modules/bar`的版本。当`bar`包中引用了`require('quxux')`,它会得到链接到`/usr/lib/node/bar/4.3.2/node_modules/quux`的版本
+
+此外，为了使模块查找的过程更加优化，我们可以吧包放在`/usr/lib/node_modules/<name>/<version>`中，而不是直接放在`/usr/lib/node`。这样Node.js就不用麻烦的在`/usr/node_modules`或者`/node_modules`寻找缺少的依赖。
+
+为了使模块可以被Node.js的交互式解析器（REPL）使用。可以将`/usr/lib/node_modules`文件夹添加为`$NODE_PATH`环境变量。因此模块查找的`node_modules`都是相互关联的，`require()`都是基于文件的绝对地址来引用的，所以包可以放在任何地方。
+
+## All Together
+为了在`require()`的时候获取到精确的文件名字，会使用` require.resolve()`函数。
+
+下面是`require.resolve()`的高级算法的伪码：
+```
+在路径为Y的模块中require(X)
+1. 如果X为核心模块，
+    a. 返回核心模块
+    b. 停止
+2. 如果X是以'./','/'或者'..'开头
+    a. LOAD_AS_FILE(Y + X)
+    b. LOAD_AS_DIRECTORY(Y + X)
+3. LOAD_NODE_MODULES(X, dirname(Y))
+4. 抛出 "not found"
+
+LOAD_AS_FILE(X)
+1. 如果X是一个文件，以Javascript文本的方式导入X。停止寻找
+2. 如果X.js是一个文件，以Javascript文本的方式导入X.js。停止寻找
+3. 如果x.json是一个文件，格式化X.json为一个对象。停止寻找
+4. 如果X.node是一个文件，以二进制插件的方式导入X.node。停止寻找
+
+LOAD_AS_DIRECTORY(X)
+1. 如果X/package.json是一个文件
+    a. 解析X/package.json ,然后寻找“main”字段
+    b. let M = X + (json main field)
+    c. LOAD_AS_FILE(M)
+2. 如果X/index.js是一个文件，以Javascript文本的方式导入X/index.js。停止寻找
+3. 如果X/index.json是一个文件，格式化X/index.json为一个对象。停止寻找
+4. 如果X.node是一个文件，以二进制插件的方式导入X/index.node。停止寻找
+
+LOAD_NODE_MODULES(X, START)
+1. let DIRS=NODE_MODULES_PATHS(START)
+2. for each DIR in DIRS:
+   a. LOAD_AS_FILE(DIR/X)
+   b. LOAD_AS_DIRECTORY(DIR/X)
+   
+NODE_MODULES_PATHS(START)
+1. let PARTS = path split(START)
+2. let I = count of PARTS - 1
+3. let DIRS = []
+4. while I >= 0,
+   a. if PARTS[I] = "node_modules" CONTINUE
+   c. DIR = path join(PARTS[0 .. I] + "node_modules")
+   b. DIRS = DIRS + DIR
+   c. let I = I - 1
+5. return DIRS
+```
+
 
 
 
