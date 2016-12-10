@@ -225,4 +225,130 @@ in main, a.done=true, b.done=true
 
 如果提供的路径不存在， `require()`会抛出一个错误，错误信息是`'MODULE_NOT_FOUND'`。
 
+## Folders as Modules(文件夹做为模块)
+可以很方便将项目和或者库组织在一个自定义的目录中，然后对外提供这个库的一个简单的入口。有三种方式可以将文件夹传递给`require()`作为参数。
+
+第一种方式是创建一个`package.json`文件在文件夹的根目录下，同时指定一个`main`模块。一个简单的package.json的文件可能是如下的样子：
+
+```
+{ "name" : "some-library",
+  "main" : "./lib/some-library.js" }
+```
+
+如果这个package.json文件在`./some-library`中，那么当`require('./some-library')`会试图去加载`./some-library/lib/some-library.js`。
+
+这是Node.js对package.json文件的意识程度。
+
+备注：如果`package.json`文件中未定义`main`条目，则无法被解析，Node.js会报告整个模块没有被查找的默认错误:
+
+```
+Error: Cannot find module 'some-library'
+```
+
+如果目录下面没有package.json，则Node.js获取尝试从该目录加载一个`index.js`或者`index.node`。比如，如果上面的例子中没有package.json文件，那么`require('./some-library')`会尝试加载
+* `./some-library/index.js`
+* `./some-library/index.node`
+
+##Loading from `node_modules` Folders(从node_modules文件夹中加载模块)
+如果模块加载时传递给`require()`的标识符不是原生模块，也不是以'/', '../', 或者'./'开头的，那么Node.js会从当前模块的父目录开始，然后在标识符前加上`/node_modules`，并且尝试从加上以后的路径下加载文件。Node不会再已经是以`node__modules`结尾的路径上再加上`node_modules`。
+
+如果在父目录下找不到，则寻找再上一层的目录，一直找到根目录下。
+
+比如，'/home/ry/projects/foo.js'的文件调用了`require('bar.js')`，那么Node.js会以下面这个顺序依次寻找寻：
+* `/home/ry/projects/node_modules/bar.js`
+* `/home/ry/node_modules/bar.js`
+* `/home/node_modules/bar.js`
+* `/node_modules/bar.js`
+
+这样可以本地化项目的依赖，并且使这些依赖不冲突。
+
+You can require specific files or sub modules distributed with a module by including a path suffix after the module name. For instance require('example-module/path/to/file') would resolve path/to/file relative to where example-module is located. The suffixed path follows the same module resolution semantics.
+
+##Loading from the global folders(从全局文件中导入模块)
+如果环境变量`NODE_PATH`是一系列由冒号分割绝对路径组成的列表，那么Node.js如果在其他地方没有找到需要的模块则会在这些路径查询模块。（备注：在windows下，`NODE_PATH`是由分号分割的）
+
+`NODE_PATH`一开始设计是为了支持在现在的模块解析算法确定之前从不同路径加载模块。（这里的意思是说Node发展的一开始模块解析的算法还没有完成之前，是通过`NODE_PATH`来解决从不同的路径加载模块的问题）
+
+`NODE_PATH`现在依旧支持上面说的这个功能，但是在Node.js生态系统中有了定位依赖的约定（就是上面说的一大堆的模块查询规则）之后就不是那么有必要。有时候依赖于`NODE_PATH`的项目在部署而当人们不知道`NODE_PATH`必须要被设置时会发生一些奇怪的表现。有时候模块的依赖发生改变，引起`NODE_PATH`查询时会加载一个版本不同的模块（甚至是一个不同的模块）。
+
+另外，Node.js会查询下面的路径
+1. `$HOME/.node_modules`
+2. `$HOME/.node_libraries`
+3. `$PREFIX/lib/node`
+
+当`$HOME`是用户的home目录，那么Node.js中`$PREFIX`会被设置为`node_prefix`。
+
+这个主要是出于历史原因。**你最好将你的依赖本地化在`node_modules`文件夹中。**这样依赖会被更加可靠且快速的被加载
+
+## The module wrapper(包裹模块)
+在模块代码执行之前，Node.js会将它包裹在一个函数中，使其看起来像下面这个样子：
+
+```
+(function (exports, require, module, __filename, __dirname) {
+// Your module code actually lives in here
+});
+```
+
+通过这样，Node.js实现了以下事情
+* 保证了模块中定义的顶级变量（通过`var`,`const`或者`let`定义的）会在module的作用域中而不是在全局。
+* 这样可以提供一些指定给模块的变量去像是全局变量，例如：
+    * 可以使用module和exports来在模块里对外暴露一些变量
+    * 包含了模块的文件名的绝对路径和模块本身的绝对路径的`__filename`和`__dirname`变量方便被使用
+
+##The `module` Object(module对象)
+Added in: v0.1.16
+· <Object>
+在每个模块中，自由变量`module`是当前模块对象的引用。为了方便，在模块中`moduls.exports`也可以直接通过`exports`来使用。`module`变量实际上不是全局的，而是每个模块内部的。
+
+###module.children
+Added in: v0.1.16
+· <Array>
+这个模块需要的对象（？？不知道是不是指这个模块依赖的所有模块）
+
+###module.exports
+Added in: v0.1.16
+· <Object>
+`module.exports`是由模块系统创造的。有时候这是不可接受的。很多人希望他们的模块是一些类的实例。为了做到这个，分配需要export对象给`module.exports`。请注意，分配需要export对象给的`exports`会很容易被修改,而这个不是我们希望你做的。
+
+例如，假设我们我们写的一个模块调用了`a.js`
+
+```
+const EventEmitter = require('events');
+
+module.exports = new EventEmitter();
+
+// Do some work, and after some time emit
+// the 'ready' event from the module itself.
+setTimeout(() => {
+  module.exports.emit('ready');
+}, 1000);
+```
+
+接下来在另外一个文件中我们这么做
+
+```
+const a = require('./a');
+a.on('ready', () => {
+  console.log('module a is ready');
+});
+```
+
+注意：分配个给`module.exports`的内容必要立即完成。它不可以在任何一个回调中完整，下面这个例子将失败：
+x.js
+
+```
+setTimeout(() => {
+  module.exports = { a: 'hello' };
+}, 0);
+```
+
+y.js
+
+```
+const x = require('./x');
+console.log(x.a);
+```
+
+####exports alias(exports别名)
+Added in: v0.1.16
 
