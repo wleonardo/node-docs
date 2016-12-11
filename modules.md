@@ -297,17 +297,17 @@ You can require specific files or sub modules distributed with a module by inclu
 
 ##The `module` Object(module对象)
 Added in: v0.1.16
-· <Object>
+* <Object>
 在每个模块中，自由变量`module`是当前模块对象的引用。为了方便，在模块中`moduls.exports`也可以直接通过`exports`来使用。`module`变量实际上不是全局的，而是每个模块内部的。
 
 ###module.children
 Added in: v0.1.16
-· <Array>
+* <Array>
 这个模块需要的对象（？？不知道是不是指这个模块依赖的所有模块）
 
 ###module.exports
 Added in: v0.1.16
-· <Object>
+* <Object>
 `module.exports`是由模块系统创造的。有时候这是不可接受的。很多人希望他们的模块是一些类的实例。为了做到这个，分配需要export对象给`module.exports`。请注意，分配需要export对象给的`exports`会很容易被修改,而这个不是我们希望你做的。
 
 例如，假设我们我们写的一个模块调用了`a.js`
@@ -351,4 +351,48 @@ console.log(x.a);
 
 ####exports alias(exports别名)
 Added in: v0.1.16
+在模块中`exports`变量可在作为`module.exports`的引用。与任何的变量一样，一旦你指定了新的变量给`exports`，则不在绑定之前的变量。为了说明这种情况，我们假设`require()`是这样执行的：
+
+```
+function require(...) {
+  // ...
+  ((module, exports) => {
+    // Your module code here
+    exports = some_func;        // re-assigns exports, exports is no longer
+                                // a shortcut, and nothing is exported.
+    module.exports = some_func; // makes your module export 0
+  })(module, module.exports);
+  return module;
+}
+```
+
+作为指导，`exports`和`module.exports`的关系视乎有些神奇，忽略`exports`仅适用`module.exports`。
+
+####module.filename
+Added in: v0.1.16
+* <String>
+模块完整的解析文件名。
+
+####module.id
+Added in: v0.1.16
+* <String>
+模块的标识符，通常是模块完整的解析文件名。
+
+#### module.loaded
+Added in: v0.1.16
+* <Boolean>
+判断module是否已经加载完成，或者正在加载中。
+
+####module.parent
+Added in: v0.1.16
+* <Object>模块对象
+第一个加载本模块的父模块对象。
+
+####module.require(id)
+Added in: v0.5.1
+* `id` <String>
+* Return: <Object> 解析到的模块的`module.exports`
+`module.require`方法提供了一个记载模块的方式，就像从原始模块调用`require()`一样。
+
+备注：为了实现这个，你必须拿到`module`对象的引用。由于`require()`是返回`module.export`对象,且`module`通常是只在模块中特定的代码中可用，因此它必须被显式到处以便使用。
 
